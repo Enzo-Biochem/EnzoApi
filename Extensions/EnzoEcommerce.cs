@@ -216,6 +216,14 @@ namespace EnzoApi.Extensionsf
 
             });
 
+            app.MapPost("api/v1/orders", async () =>
+            {
+
+
+
+
+            });
+
             app.MapGet("api/v1/customers", async (HttpRequest request, HttpContext ctx, CommandComposer commander,Gateway gateway, string? cmd) =>
             {
                 bool rsl = false;
