@@ -216,11 +216,11 @@ namespace EnzoApi.Extensionsf
 
             });
 
-            app.MapPost("api/v1/orders", async () =>
+            app.MapPost("api/v1/orders", async (CommandComposer commander, Gateway gateway) =>
             {
 
 
-
+                var orders = gateway.
 
             });
 
