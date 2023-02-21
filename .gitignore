@@ -359,4 +359,5 @@ connections.config
 *.pem
 
 #.NET CORE
-*appsettings.*.json
+/*appsettings.*.json
+/appsettings.json
