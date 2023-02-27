@@ -1,8 +1,9 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
+using ENZO.Extensions;
 using EnzoApi.Models;
 using EnzoCommanderSDK;
-using EnzoCommanderSDK;
+using EnzoCommanderSDK.Structures.interfaces;
 using System.Globalization;
 //using System.Data.Common;
 //using System.Data.OleDb;
@@ -220,11 +221,72 @@ namespace EnzoApi.Extensionsf
             {
 
 
-                var orders = gateway.
+                var orders = await gateway.GetOrdersAsync();
+
+                if (!Directory.Exists(_UploadRoot)) Directory.CreateDirectory(_UploadRoot);
+
+                string stamp = $"{DateTime.Now.ToString("yyyyddMMHHmmss")}.csv";
+                string ohFile = $"orders_{stamp}";
+                string detFile = $"order-items_{stamp}";
+
+                var orderHeaders = orders.Select(oh => (OrderHeader)oh).ToList();
+
+                //write order header file:
+                using (var writer = new StreamWriter($"{_UploadRoot}{ohFile}"))
+                {
+                    try
+                    {
+                        using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                        {
+                            csv.WriteRecords(orderHeaders);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception("Commerce API - Orders (POST)", ex);
+                    }
+                    finally
+                    {
+                        writer.Close();
+                    }
+
+                }
+
+                //write order details file:
+                List<OrderItem> details = new  List<OrderItem>();
+
+                orders.ForEach(oi => details.AddRange(oi.Detail.ToArray()));
+
+                using (var writer = new StreamWriter($"{_UploadRoot}{detFile}"))
+                {
+                    try
+                    {
+                        using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                        {
+                            csv.WriteRecords(details);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception("Commerce API - Orders (POST)", ex);
+                    }
+                    finally
+                    {
+                        writer.Close();
+                    }
+
+                }
+
+                //Send the files:
+
+                await commander.cmd.SendFile("orders");
+
+
+                return true;
 
             });
 
-            app.MapGet("api/v1/customers", async (HttpRequest request, HttpContext ctx, CommandComposer commander,Gateway gateway, string? cmd) =>
+            app.MapGet("api/v1/customers", async (HttpRequest request, HttpContext ctx, CommandComposer commander, Gateway gateway, string? cmd) =>
             {
                 bool rsl = false;
 
