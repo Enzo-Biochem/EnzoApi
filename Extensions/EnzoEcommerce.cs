@@ -3,6 +3,7 @@ using CsvHelper.Configuration;
 using ENZO.Extensions;
 using EnzoApi.Models;
 using EnzoCommanderSDK;
+using EnzoCommanderSDK.mef;
 using EnzoCommanderSDK.Structures.interfaces;
 using System.Globalization;
 using System.Security.Cryptography;
@@ -44,7 +45,7 @@ namespace EnzoApi.Extensionsf
 
             var services = builder.Services;
 
-            var _commander = new CommandComposer(config.EnzoCom, _ROOT);
+            var _commander = new CommandComposer(config.EnzoCom, _ROOT, _UploadRoot);
             var gw = new Gateway(config.DBConn);
 
 
@@ -113,7 +114,6 @@ namespace EnzoApi.Extensionsf
                     }
 
                 SEND:
-                    //Generate the csv files to send:
                     if (await GenerateOrdersFiles(gateway))
                     {
                         rsl.Success = await commander.cmd.SendFile("orders");
@@ -278,7 +278,33 @@ namespace EnzoApi.Extensionsf
 
                         var deleg = _codex[cmd];
 
-                        deleg.DynamicInvoke(commander, gateway);
+                        //deleg.DynamicInvoke(commander, gateway);
+
+                        //Generate file:
+                        await GenerateCsv(cmd, commander, gateway);
+
+
+                        //switch (cmd)
+                        //{
+                        //    case "orders":
+                        //        //var orders = await gateway.GetOrdersAsync();
+                        //        //if (orders.Any()) await commander.cmd.GenerateFileAsync(orders, cmd);
+
+
+                        //        break;
+                        //    case "customers":
+                        //        //No action yet, just send any customers.csv file found in the upload folder...
+
+                        //        break;
+                        //    case "contacts":
+                        //        //No action yet, just end any contacts.csv file found in the upload folder...
+
+                        //        break;
+                        //    default:
+                        //        ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
+
+                        //        return rsp;
+                        //}
 
                         rsl = await commander.cmd.SendFile(cmd);
 
@@ -289,6 +315,8 @@ namespace EnzoApi.Extensionsf
                     switch (action)
                     {
                         case "s":
+
+                            await GenerateCsv(cmd, commander, gateway);
 
                             rsp.Success = await commander.cmd.SendFile(cmd);
                             break;
@@ -335,6 +363,27 @@ namespace EnzoApi.Extensionsf
             return app;
         }
 
+
+
+        static async Task<bool> GenerateCsv(string mapping, CommandComposer commander, Gateway gateway)
+        {
+            bool rsl = false;
+
+            switch (mapping)
+            {
+                case "orders":
+                    var orders = await gateway.GetOrdersAsync();
+                    if (orders.Any()) rsl = await commander.cmd.GenerateFileAsync(orders, mapping);
+
+
+                    break;
+                default:
+
+                    return true;
+            }
+
+            return rsl;
+        }
 
         /// <summary>
         /// Generate the orders and order-items CSV file.
